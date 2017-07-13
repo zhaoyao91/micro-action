@@ -103,7 +103,7 @@ Generally, if you manually return `fail`, you should always set the code since y
 - **handlers** - {cmd: handler}
 - **handler** - async func(input) => any
 
-f `handler` returns neither `ok` nor `fail`, the returned-value will be put into `ok.output`.
+If `handler` returns neither `ok` nor `fail`, the returned-value will be put into `ok.output`.
 
 If `handler` throws an error, it will be put into `fail.error`.
 
