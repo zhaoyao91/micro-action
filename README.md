@@ -2,6 +2,21 @@
 
 Help define actions for [micro](https://github.com/zeit/micro).
 
+## Introduction
+
+Design a good http api is hard, but write an action is much easier.
+
+This package defined a pretty simple protocol - **micro-action** - which is based on http and focuses on application 
+logic instead of tons of http stuff.
+
+This package also offers many utils which can dramatically simplify your work to define and invoke such actions.
+
+Moreover, **micro-action** does not make any isolated island. Since it's based on http protocol, any outside user can 
+safely treat a micro-action service as a http service and use any http lib to communicate with it.
+
+NOTE: this package is intended to be used with [Zeit Micro](https://github.com/zeit/micro), which is a light and pretty
+node.js http library.
+
 ## Usage
 
 Install the package:
@@ -94,6 +109,22 @@ If `handler` throws an error, it will be put into `fail.error`.
 #### fail
 
 - **fail** - func(code, [output], [err]) => HandlerResult 
+
+#### callAtHttpLevel
+
+- **callAtHttpLevel** - async func(url, cmd, input) => res
+
+#### callAtActionLevel
+
+- **callAtActionLevel** - async func(url, cmd, input) => body
+
+It will throw an error if `res.ok=false`.
+
+#### callOnOk
+
+- **callOnOk** - async func(url, cmd, input) => output
+
+It will throw an error if `body.ok=false`.
 
 ## Micro Action Protocol
 
