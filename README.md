@@ -2,40 +2,6 @@
 
 Help define actions for [micro](https://github.com/zeit/micro).
 
-## Action Protocol
-
-Action protocol is based on HTTP.
-
-### Request
-
-- method: POST
-- headers: {'Content-Type': 'application/json'}
-- body: {cmd: String, input: Any}
-
-`cmd` is the identifier of the action to be called.
-
-Any params or args should be put into `input`.
-
-### Response
-
-- headers: {'Content-Type': 'application/json'}
-- body: {ok: Boolean, code: Any, output: Any, error: Any}
- 
-If action succeeds, `ok=true`, else (fails or throws) `ok=false`.
- 
-`code` is used to help identify the cases of this response.
- 
-`output` is the result data carried in the response.
- 
-`error` may be included to help caller reason about the problem.
- 
-- if `ok=true, code=undefined`, this is the only possible ok response.
-- if `ok=true`, `output` is the result data.
-- if `ok=false, code=undefined`, this is a non-ok response with unknown error.
-- if `ok=false`, `output` can be used to complement `code` to provide further details.
-- if `ok=false`, `error` may be included to help the **developer** reason about what happened, but it should not be 
-used to branch application logic since the content is arbitrary.
-
 ## Usage
 
 Install the package:
@@ -114,6 +80,40 @@ If `handler` throws an error, it will be put into `fail.error`.
 #### fail
 
 - **fail** - func(code, [output], [err]) => HandlerResult 
+
+## Micro Action Protocol
+
+Micro Action Protocol is based on HTTP.
+
+### Request
+
+- method: POST
+- headers: {'Content-Type': 'application/json'}
+- body: {cmd: String, input: Any}
+
+`cmd` is the identifier of the action to be called.
+
+Any params or args should be put into `input`.
+
+### Response
+
+- headers: {'Content-Type': 'application/json'}
+- body: {ok: Boolean, code: Any, output: Any, error: Any}
+ 
+If action succeeds, `ok=true`, else (fails or throws) `ok=false`.
+ 
+`code` is used to help identify the cases of this response.
+ 
+`output` is the result data carried in the response.
+ 
+`error` may be included to help caller reason about the problem.
+ 
+- if `ok=true, code=undefined`, this is the only possible ok response.
+- if `ok=true`, `output` is the result data.
+- if `ok=false, code=undefined`, this is a non-ok response with unknown error.
+- if `ok=false`, `output` can be used to complement `code` to provide further details.
+- if `ok=false`, `error` may be included to help the **developer** reason about what happened, but it should not be 
+used to branch application logic since the content is arbitrary.
 
 ## License
 
