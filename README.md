@@ -10,15 +10,11 @@ Install the package:
 npm i -S micro-action
 ```
 
-Import the utils:
-
-```ecmascript 6
-const {route, ok, fail} = require('micro-aciton')
-```
-
 Define actions in your micro handler:
 
 ```ecmascript 6
+const {route, ok, fail} = require('micro-aciton')
+
 module.exports = async (req, res) => {
   await route(req, res, {
     // {cmd: 'ok1', input: {name: 'Bob', age: 20}}
@@ -57,6 +53,14 @@ module.exports = async (req, res) => {
     }
   })
 }
+```
+
+In your client, you can call the service via any http request lib. Or, you can use the tools we offer to easy the work:
+
+```ecmascript 6
+const {callAtHttpLevel, callAtActionLevel, callOnOk} = require('micro-action')
+
+todo
 ```
 
 Generally, if you manually return `fail`, you should always set the code since you *know* this failure case.

@@ -1,4 +1,5 @@
 const {json, send} = require('micro')
+const fetch = require('node-fetch')
 
 module.exports = {
   async defaultHandler(req, res) {
@@ -18,6 +19,8 @@ module.exports = {
   },
 
   ok, fail,
+
+  callAtHttpLevel, callAtActionLevel, callOnOk,
 }
 
 class HandlerResult {
@@ -91,3 +94,25 @@ async function runHandler (handler, input, res) {
     console.error(result.error)
   }
 }
+
+function callAtHttpLevel (url, cmd, input) {
+  return fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({cmd, input})
+  })
+}
+
+async function callAtActionLevel (url, cmd, input) {
+  const res = await callAtHttpLevel(url, cmd, input)
+  const body = await res.json()
+  if (!res.ok) throw new Error(`failed to request ${url}: ${JSON.stringify(body)}`)
+  else return body
+}
+
+async function callOnOk (url, cmd, input) {
+  const body = await callAtActionLevel(url, cmd, input)
+  if (!body.ok) throw new Error(`failed to request ${url}: ${JSON.stringify(body)}`)
+  else return body.output
+}
+
