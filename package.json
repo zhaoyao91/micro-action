@@ -1,10 +1,14 @@
 {
   "name": "micro-action",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "help define actions for micro",
   "main": "index.js",
   "author": "zhaoyao91 <zhaoyao91@163.com>",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhaoyao91/micro-action"
+  },
   "peerDependencies": {
     "micro": "^7.x.x"
   },
