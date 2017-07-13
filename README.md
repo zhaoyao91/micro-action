@@ -162,4 +162,4 @@ used to branch application logic since the content is arbitrary.
 
 ## License
 
-MIT
+ISC
