@@ -6,7 +6,7 @@
   "author": "zhaoyao91 <zhaoyao91@163.com>",
   "license": "ISC",
   "scripts": {
-    "test": "node --harmony node_modules/.bin/ava test.js"
+    "test": "ava"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,10 @@
   },
   "devDependencies": {
     "ava": "^0.21.0",
+    "babel-polyfill": "^6.23.0",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-stage-0": "^6.24.1",
+    "babel-register": "^6.24.1",
     "micro": "^7.3.3",
     "test-listen": "^1.0.2"
   }

@@ -1,8 +1,11 @@
+require("babel-polyfill")
+require('babel-register')
+
 const micro = require('micro')
 const test = require('ava')
 const listen = require('test-listen')
 const fetch = require('node-fetch')
-const {route, ok, fail, callForResponse, callForBody, callForOk} = require('./index')
+const {route, ok, fail, callForBody, callForOk} = require('./index')
 const os = require('os')
 
 test('ping pong', async t => {
@@ -58,6 +61,8 @@ test('error handling', async t => {
   const service = micro(route({
     'failWithError': () => fail('fail-with-error', {details: 'why'}, new Error('fail with error')),
     'throwError': () => {throw new Error('throw error')}
+  }, {
+    errorLogger: (err) => {/*do not show error in tests*/}
   }))
 
   const url = await listen(service)
