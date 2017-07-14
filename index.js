@@ -1,6 +1,7 @@
 const {json, send} = require('micro')
 const fetch = require('node-fetch')
 const url = require('url')
+const os = require('os')
 
 module.exports = {
   async defaultRequestHandler(req, res) {
@@ -15,29 +16,90 @@ module.exports = {
     send(res, 200, fail(undefined, undefined, err).toObject())
   },
 
-  async route(req, res, handlers) {
-    const {cmd, input} = await json(req)
-    const handler = findHandler(cmd, handlers)
-
-    if (!handler) {
-      return await module.exports.defaultRequestHandler(req, res)
+  route(...args) {
+    if (args.length <= 1) {
+      // this can cache prepared handlers
+      const handlers = prepareHandlers(args[0])
+      return (req, res) => route(req, res, handlers)
     }
     else {
-      return await runHandler(handler, input, res)
+      const [req, res, handlers] = args
+      return route(req, res, prepareHandlers(handlers))
     }
   },
 
   ok, fail,
 
-  callAtHttpLevel, callAtActionLevel, callOnOk,
+  callForResponse, callForBody, callForOk,
+
+  /**
+   * @deprecated
+   */
+  callAtHttpLevel: callForResponse,
+
+  /**
+   * @deprecated
+   */
+  callAtActionLevel: callForBody,
+
+  /**
+   * @deprecated
+   */
+  callOnOk: callForOk,
 }
 
-function findHandler (cmd, handlers) {
-  for (let key in handlers) {
-    if (handlers.hasOwnProperty(key)) {
-      if (compareCmds(cmd, key)) return handlers[key]
+async function route (req, res, handlers) {
+  if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
+    const body = await json(req)
+    if (typeof body !== 'string' && !Array.isArray(body) && body !== null) {
+      const {cmd, input} = body
+      const handler = handlers[uniformCmd(cmd)]
+      if (handler) {
+        return await runHandler(handler, input, res)
+      }
     }
   }
+  return await module.exports.defaultRequestHandler(req, res)
+}
+
+const defaultHandlers = {
+  'ping': () => 'pong',
+  'info': () => ({
+    timeString: new Date(),
+    time: (new Date()).getTime(),
+    pid: process.pid,
+    hostname: os.hostname(),
+    ips: getIPs(),
+  })
+}
+
+// copy from https://stackoverflow.com/a/10756441/3371998
+function getIPs () {
+  const interfaces = os.networkInterfaces()
+  const addresses = []
+  for (let k in interfaces) {
+    for (let k2 in interfaces[k]) {
+      const address = interfaces[k][k2]
+      if (address.family === 'IPv4' && !address.internal) {
+        addresses.push(address.address)
+      }
+    }
+  }
+  return addresses
+}
+
+function prepareHandlers (handlers) {
+  handlers = {
+    ...defaultHandlers,
+    ...handlers,
+  }
+  const preparedHandlers = {}
+  for (let key in handlers) {
+    if (handlers.hasOwnProperty(key)) {
+      preparedHandlers[uniformCmd(key)] = handlers[key]
+    }
+  }
+  return preparedHandlers
 }
 
 class HandlerResult {
@@ -111,7 +173,7 @@ async function runHandler (handler, input, res) {
   }
 }
 
-function callAtHttpLevel (url, cmd, input) {
+function callForResponse (url, cmd, input) {
   return fetch(url, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -119,24 +181,27 @@ function callAtHttpLevel (url, cmd, input) {
   })
 }
 
-async function callAtActionLevel (url, cmd, input) {
-  const res = await callAtHttpLevel(url, cmd, input)
-  const body = await res.json()
-  if (!res.ok) throw new Error(`failed to request ${url}: ${JSON.stringify(body)}`)
-  else return body
+async function callForBody (url, cmd, input) {
+  const res = await callForResponse(url, cmd, input)
+  if (!res.ok) {
+    throw new Error(`failed to request ${url}: ${await res.text()}`)
+  }
+  else if (res.headers.get('content-type') !== 'application/json') {
+    throw new Error(`invalid body received from ${url}: ${await res.text()}`)
+  }
+  else {
+    const body = await res.json()
+    if (typeof body === 'string' || Array.isArray(body) || body === null) {
+      throw new Error(`invalid body received from ${url}: ${body}`)
+    }
+    return body
+  }
 }
 
-async function callOnOk (url, cmd, input) {
-  const body = await callAtActionLevel(url, cmd, input)
+async function callForOk (url, cmd, input) {
+  const body = await callForBody(url, cmd, input)
   if (!body.ok) throw new Error(`failed to request ${url}: ${JSON.stringify(body)}`)
   else return body.output
-}
-
-function compareCmds (cmd1, cmd2) {
-  cmd1 = uniformCmd(cmd1)
-  cmd2 = uniformCmd(cmd2)
-
-  return cmd1 === cmd2
 }
 
 function sortQuery (query) {

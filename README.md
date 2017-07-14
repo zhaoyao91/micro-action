@@ -73,19 +73,19 @@ module.exports = async (req, res) => {
 In your client, you can call the service via any http request lib. Or, you can use the tools we offer to easy the work:
 
 ```ecmascript 6
-const {callAtHttpLevel, callAtActionLevel, callOnOk} = require('micro-action')
+const {callForResponse, callForBody, callForOk} = require('micro-action')
 
 // res is a fetch response
 // see https://github.com/bitinn/node-fetch#class-response
-const res = await callAtHttpLevel(url, cmd, input)
+const res = await callForResponse(url, cmd, input)
 
 // body is the http body, which is also the content of a micro-action response
 // it will throw an error if res.ok=false
-const body = await callAtActionLevel(url, cmd, input)
+const body = await callForBody(url, cmd, input)
 
 // output is the body.output part of a micro-action response
 // it will throw an error if body.ok=false
-const output = await callOnOk(url, cmd, input)
+const output = await callForOk(url, cmd, input)
 ```
 
 Generally, if you manually return `fail`, you should always set the code since you *know* this failure case.
@@ -110,19 +110,19 @@ If `handler` throws an error, it will be put into `fail.error`.
 
 - **fail** - func(code, [output], [err]) => HandlerResult 
 
-#### callAtHttpLevel
+#### callForResponse
 
-- **callAtHttpLevel** - async func(url, cmd, input) => res
+- **callForResponse** - async func(url, cmd, input) => res
 
-#### callAtActionLevel
+#### callForBody
 
-- **callAtActionLevel** - async func(url, cmd, input) => body
+- **callForBody** - async func(url, cmd, input) => body
 
 It will throw an error if `res.ok=false`.
 
-#### callOnOk
+#### callForOk
 
-- **callOnOk** - async func(url, cmd, input) => output
+- **callForOk** - async func(url, cmd, input) => output
 
 It will throw an error if `body.ok=false`.
 
