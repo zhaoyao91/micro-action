@@ -3,8 +3,16 @@ const fetch = require('node-fetch')
 const url = require('url')
 
 module.exports = {
-  async defaultHandler(req, res) {
+  async defaultRequestHandler(req, res) {
     send(res, 501, 'Not Implemented')
+  },
+
+  async defaultErrorLogger(err) {
+    console.error(err)
+  },
+
+  async defaultErrorHandler(err, {input, res}) {
+    send(res, 200, fail(undefined, undefined, err).toObject())
   },
 
   async route(req, res, handlers) {
@@ -12,7 +20,7 @@ module.exports = {
     const handler = findHandler(cmd, handlers)
 
     if (!handler) {
-      return await module.exports.defaultHandler(req, res)
+      return await module.exports.defaultRequestHandler(req, res)
     }
     else {
       return await runHandler(handler, input, res)
@@ -87,20 +95,19 @@ function fail (code, output, error) {
 }
 
 async function runHandler (handler, input, res) {
-  let result
   try {
-    result = await handler(input)
+    let result = await handler(input)
     if (!(result instanceof HandlerResult)) {
       result = ok(undefined, result)
+    }
+    if (result.error !== undefined) {
+      await module.exports.defaultErrorLogger(result.error)
     }
     send(res, 200, result.toObject())
   }
   catch (err) {
-    result = fail(undefined, undefined, err)
-    send(res, 200, result.toObject())
-  }
-  if (result.error !== undefined) {
-    console.error(result.error)
+    await module.exports.defaultErrorLogger(err)
+    await module.exports.defaultErrorHandler(err)
   }
 }
 
@@ -128,8 +135,6 @@ async function callOnOk (url, cmd, input) {
 function compareCmds (cmd1, cmd2) {
   cmd1 = uniformCmd(cmd1)
   cmd2 = uniformCmd(cmd2)
-
-  console.log(cmd1, cmd2)
 
   return cmd1 === cmd2
 }

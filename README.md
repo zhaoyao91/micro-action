@@ -2,6 +2,21 @@
 
 Help define actions for [micro](https://github.com/zeit/micro).
 
+## Introduction
+
+Design a good http api is hard, but write an action is much easier.
+
+This package defined a pretty simple protocol - **micro-action** - which is based on http and focuses on application 
+logic instead of tons of http stuff.
+
+This package also offers many utils which can dramatically simplify your work to define and invoke such actions.
+
+Moreover, **micro-action** does not make any isolated island. Since it's based on http protocol, any outside user can 
+safely treat a micro-action service as a http service and use any http lib to communicate with it.
+
+NOTE: this package is intended to be used with [Zeit Micro](https://github.com/zeit/micro), which is a light and pretty
+node.js http library.
+
 ## Usage
 
 Install the package:
@@ -60,7 +75,17 @@ In your client, you can call the service via any http request lib. Or, you can u
 ```ecmascript 6
 const {callAtHttpLevel, callAtActionLevel, callOnOk} = require('micro-action')
 
-todo
+// res is a fetch response
+// see https://github.com/bitinn/node-fetch#class-response
+const res = await callAtHttpLevel(url, cmd, input)
+
+// body is the http body, which is also the content of a micro-action response
+// it will throw an error if res.ok=false
+const body = await callAtActionLevel(url, cmd, input)
+
+// output is the body.output part of a micro-action response
+// it will throw an error if body.ok=false
+const output = await callOnOk(url, cmd, input)
 ```
 
 Generally, if you manually return `fail`, you should always set the code since you *know* this failure case.
@@ -84,6 +109,22 @@ If `handler` throws an error, it will be put into `fail.error`.
 #### fail
 
 - **fail** - func(code, [output], [err]) => HandlerResult 
+
+#### callAtHttpLevel
+
+- **callAtHttpLevel** - async func(url, cmd, input) => res
+
+#### callAtActionLevel
+
+- **callAtActionLevel** - async func(url, cmd, input) => body
+
+It will throw an error if `res.ok=false`.
+
+#### callOnOk
+
+- **callOnOk** - async func(url, cmd, input) => output
+
+It will throw an error if `body.ok=false`.
 
 ## Micro Action Protocol
 
@@ -135,4 +176,4 @@ used to branch application logic since the content is arbitrary.
 
 ## License
 
-MIT
+ISC
