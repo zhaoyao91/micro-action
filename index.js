@@ -107,7 +107,7 @@ async function runHandler (handler, input, res) {
   }
   catch (err) {
     await module.exports.defaultErrorLogger(err)
-    await module.exports.defaultErrorHandler(err)
+    await module.exports.defaultErrorHandler(err, {input, res})
   }
 }
 
