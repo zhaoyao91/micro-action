@@ -1,5 +1,6 @@
 const {json, send} = require('micro')
 const fetch = require('node-fetch')
+const url = require('url')
 
 module.exports = {
   async defaultHandler(req, res) {
@@ -8,7 +9,7 @@ module.exports = {
 
   async route(req, res, handlers) {
     const {cmd, input} = await json(req)
-    const handler = handlers[cmd]
+    const handler = findHandler(cmd, handlers)
 
     if (!handler) {
       return await module.exports.defaultHandler(req, res)
@@ -21,6 +22,14 @@ module.exports = {
   ok, fail,
 
   callAtHttpLevel, callAtActionLevel, callOnOk,
+}
+
+function findHandler (cmd, handlers) {
+  for (let key in handlers) {
+    if (handlers.hasOwnProperty(key)) {
+      if (compareCmds(cmd, key)) return handlers[key]
+    }
+  }
 }
 
 class HandlerResult {
@@ -116,3 +125,24 @@ async function callOnOk (url, cmd, input) {
   else return body.output
 }
 
+function compareCmds (cmd1, cmd2) {
+  cmd1 = uniformCmd(cmd1)
+  cmd2 = uniformCmd(cmd2)
+
+  console.log(cmd1, cmd2)
+
+  return cmd1 === cmd2
+}
+
+function sortQuery (query) {
+  if (!query) return query
+  else return query.split('&').sort().join('&')
+}
+
+function uniformCmd (cmd) {
+  const {pathname, query: originalQuery} = url.parse(cmd)
+  const query = sortQuery(originalQuery)
+
+  if (!query) return pathname
+  else return `${pathname}?${query}`
+}

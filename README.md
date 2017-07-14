@@ -95,7 +95,21 @@ Micro Action Protocol is based on HTTP.
 - headers: {'Content-Type': 'application/json'}
 - body: {cmd: String, input: Any}
 
-`cmd` is the identifier of the action to be called.
+`cmd` is the identifier of the action to be called. 
+It's a relative url with query string.
+The pathname part tells the action and target.
+The query part is more like tags for action used to further distinguish similar actions.
+Also, the order of query tokens is trivial.
+
+For example:
+
+- create
+- create/user
+- get/user
+- get/user?by=id
+- get/users?sortBy=name&sortBy=createdAt
+
+Note: `get/user` is different from `/get/user` and `get/user/`
 
 Any params or args should be put into `input`.
 
