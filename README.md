@@ -1,12 +1,12 @@
 # Micro Action
 
-Help define actions for [micro](https://github.com/zeit/micro).
+Definition an tools help build simple action server with [Zeit Micro](https://github.com/zeit/micro).
 
 ## Introduction
 
 Design a good http api is hard, but write an action is much easier.
 
-This package defined a pretty simple protocol - **micro-action** - which is based on http and focuses on application 
+This package defined a pretty simple protocol - **micro-action** - which is based on http and helps you focus on application 
 logic instead of tons of http stuff.
 
 This package also offers many utils which can dramatically simplify your work to define and invoke such actions.
@@ -19,112 +19,195 @@ node.js http library.
 
 ## Usage
 
-Install the package:
+### Install package
 
 ```bash
 npm i -S micro-action
 ```
 
-Define actions in your micro handler:
+### Basic usage
 
 ```ecmascript 6
-const {route, ok, fail} = require('micro-aciton')
+// server.js
+const {route} = require('micro-action')
 
-module.exports = async (req, res) => {
-  await route(req, res, {
-    // {cmd: 'ok1', input: {name: 'Bob', age: 20}}
-    // =>
-    // {ok: true, code: undefined, output: 'Bob'}
-    'ok1'(input) {
-      return `hello ${input.name}`
-    },
-    
-    // {cmd: 'ok2', input: {name: 'Bob', age: 20}}
-    // =>
-    // {ok: true, code: 'ok-2', output: {input: {name: 'Bob', age: 20}} 
-    'ok2'(input) {
-      return ok('ok-2', {input})
-    },
-    
-    // {cmd: 'fail1', input: {name: 'Bob', age: 20}}
-    // =>
-    // {ok: false, code: 'fail-1', output: {input: {name: 'Bob', age: 20}} 
-    'fail1'(input) {
-      return fail('fail-1', {input})
-    },
-    
-    // {cmd: 'error1', input: {name: 'Bob', age: 20}}
-    // =>
-    // {ok: false, code: undefined, error: {name: 'Error', message: 'some error}} 
-    'error1'(input) {
-      throw new Error('some error')
-    },
-    
-    // {cmd: 'error2', input: {name: 'Bob', age: 20}}
-    // =>
-    // {ok: false, code: 'error-2', output: {input: {name: 'Bob', age: 20}, error: {name: 'Error', message: 'error again'}} 
-    'error2'(input) {
-      return fail('error-2', {input}, new Error('error again'))
-    }
-  })
+module.exports = route({
+  'add': ({a, b}) => a + b,
+  'add?async': async ({a, b}) => await Promise.resolve(a + b)
+})
+```
+
+```ecmascript 6
+// client.js
+const {callForOk} = require('micro-action')
+
+const sum1 = await callForOk('http://server/path', 'add', {a:1, b:2})
+// sum=3
+
+const sum2 = await = callForOk('http://server/path', 'add?async', {a:2, b:3})
+// sum=5
+```
+
+### Ok with code
+
+If you have multiple possible success cases, use code to distinguish them.
+
+```ecmascript 6
+// server.js
+const {route, ok, fail} = require('micro-action')
+
+module.exports = {
+  'magicNumber': (number) => {
+    if (number % 2 === 0) return ok('even', number / 2)
+    else return ok('odd', number * 2)
+  },
 }
 ```
 
-In your client, you can call the service via any http request lib. Or, you can use the tools we offer to easy the work:
-
 ```ecmascript 6
-const {callForResponse, callForBody, callForOk} = require('micro-action')
+// client.js
+const {callForBody} = require('micro-action')
 
-// res is a fetch response
-// see https://github.com/bitinn/node-fetch#class-response
-const res = await callForResponse(url, cmd, input)
+const body1 = await callForBody('http://server/path', 'add', 4)
+// body1={ok: true, code:'even', output:2}
 
-// body is the http body, which is also the content of a micro-action response
-// it will throw an error if res.ok=false
-const body = await callForBody(url, cmd, input)
-
-// output is the body.output part of a micro-action response
-// it will throw an error if body.ok=false
-const output = await callForOk(url, cmd, input)
+const body2 = await = callForBody('http://server/path', 'add?async', 5)
+//body2={ok: true, code:'odd', output:10}
 ```
 
-Generally, if you manually return `fail`, you should always set the code since you *know* this failure case.
+### Fail with code
+
+You should always give a code for known failure cases.
+
+The output is optional and can be used for further details of this failure case.
+
+```ecmascript 6
+// server.js
+const {route, ok, fail} = require('micro-action')
+
+module.exports = {
+  'divide': ({a, b}) => {
+    if (b === 0) return fail('zero-denominator', {msg: 'b cannot be 0'})
+    else return a / b
+  },
+}
+```
+
+```ecmascript 6
+// client.js
+const {callForBody} = require('micro-action')
+
+const body1 = await callForBody('http://server/path', 'divide', {a:1, b:2})
+// body1={ok: true, output: 0.5}
+
+const body2 = await = callForBody('http://server/path', 'divide', {a:1, b:0})
+//body2={ok: false, code:'zero-denominator', output: {msg: 'b cannot be 0'}}
+```
+
+### Uncatched error
+
+You can ignore if you don't care the unknown errors. It will be caught and properly composed into response.
+ 
+```ecmascript 6
+// server.js
+const {route, ok, fail} = require('micro-action')
+
+module.exports = {
+  'parse/jsonString': (json) => {
+    return JSON.parse(json)
+  },
+}
+```
+
+```ecmascript 6
+// client.js
+const {callForBody} = require('micro-action')
+
+const body = await callForBody('http://server/path', 'parse/jsonString', '{invalidJsonString')
+// body1={ok: false, error: {name: 'SyntaxError', message: 'Unexpected token i in JSON at position 1'}}
+```
+
+### Call via raw http lib
+
+You can use any http library to call micro-action service.
+
+```ecmascript 6
+// server.js
+const {route} = require('micro-action')
+
+module.exports = route({
+  'hello': () => 'world'
+})
+```
+
+```ecmascript 6
+// client.js
+const fetch = require('node-fetch')
+
+const res = await fetch('http://server/path', 'hello')
+const body = await res.json()
+// body={ok: true, output: 'world'}
+```
+
+### Built-in handlers
+
+There are some useful built-in handlers.
+
+```ecmascript 6
+// server.js
+const {route} = require('micro-action')
+
+module.exports = route()
+```
+
+```ecmascript 6
+// client.js
+const {callForOk} = require('micro-action')
+
+const body1 = await callForOk('http://server/path', 'ping')
+// body1='pong'
+
+const body2 = await callForOk('http://server/path', 'info')
+// body2={pid, hostname, ips, time, timeString}
+```
 
 ## APIs
 
 #### route
 
-- **route** - async func(req, res, handlers)
-- **handlers** - {cmd: handler}
-- **handler** - async func(input) => any
+func(handlers, options) => [microRequestHandler][[micro-request-handler]]
 
-If `handler` returns neither `ok` nor `fail`, the returned-value will be put into `ok.output`.
-
-If `handler` throws an error, it will be put into `fail.error`.
+- handlers - object, key is cmd pattern, value is the handler.
+- handler - async func(input) => any | handlerResult
+- options
+  - errorLogger - async func(err)
+  - errorHandler - async func(err, res, input) => any | handlerResult
+  - otherRequestHandler - [microRequestHandler][[micro-request-handler]]
+  - unmatchedCmdHandler - async func(cmd, input) => any | handlerResult
 
 #### ok
 
-- **ok** - func([code], [output]) => HandlerResult
+async func(code, output) => handlerResult
 
 #### fail
 
-- **fail** - func(code, [output], [err]) => HandlerResult 
+async func(code, output, err) => handlerResult
 
 #### callForResponse
 
-- **callForResponse** - async func(url, cmd, input) => res
+async func(url, cmd, input) => [fetchResponse][fetch-response]
 
 #### callForBody
 
-- **callForBody** - async func(url, cmd, input) => body
+async func(url, cmd, input) => body
 
-It will throw an error if `res.ok=false`.
+`body` is the payload of the http response. Possible fields are:
 
-#### callForOk
-
-- **callForOk** - async func(url, cmd, input) => output
-
-It will throw an error if `body.ok=false`.
+- ok - boolean, indicates whether the it is a success or failure response.
+- code - string, used to distinguish response cases
+- output - the payload of this response
+- error - if it is a failure response, it may include an error object which contains information about what's happened 
+to help debug.
 
 ## Micro Action Protocol
 
@@ -135,22 +218,6 @@ Micro Action Protocol is based on HTTP.
 - method: POST
 - headers: {'Content-Type': 'application/json'}
 - body: {cmd: String, input: Any}
-
-`cmd` is the identifier of the action to be called. 
-It's a relative url with query string.
-The pathname part tells the action and target.
-The query part is more like tags for action used to further distinguish similar actions.
-Also, the order of query tokens is trivial.
-
-For example:
-
-- create
-- create/user
-- get/user
-- get/user?by=id
-- get/users?sortBy=name&sortBy=createdAt
-
-Note: `get/user` is different from `/get/user` and `get/user/`
 
 Any params or args should be put into `input`.
 
@@ -174,6 +241,34 @@ If action succeeds, `ok=true`, else (fails or throws) `ok=false`.
 - if `ok=false`, `error` may be included to help the **developer** reason about what happened, but it should not be 
 used to branch application logic since the content is arbitrary.
 
+### Cmd Pattern
+
+`cmd` is the conjunction of handler definition and invocations.
+
+When you call `route` function and pass in a map of handlers, the key of each handler becomes its cmd pattern.
+
+When you request a service with a `cmd`, it will be used to match predefined handlers.
+ 
+The cmd pattern is simply a relative url string like `find/user?by=id`.
+The path part is used to define the action and subject.
+And the query pairs are just tags used to refine the action definition.
+
+The query pairs are order-insensitive so if you have a cmd pattern `find/user?by=id&fields=all`,
+both `find/user?by=id&fields=all` and `find/user?fields=all&by=id` will match it.
+
+Common cmd patterns are like these:
+
+- create
+- create/user
+- get/user
+- get/user?by=id
+- get/users?sortBy=name&sortBy=createdAt
+
+Note: `/get/user` and `get/user` are different.
+
 ## License
 
 ISC
+
+[micro-request-handler]: https://github.com/zeit/micro#microfn
+[fetch-response]: https://github.com/bitinn/node-fetch#class-response

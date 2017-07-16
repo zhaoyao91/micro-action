@@ -1,6 +1,6 @@
 {
   "name": "micro-action",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "help define actions for micro",
   "main": "index.js",
   "author": "zhaoyao91 <zhaoyao91@163.com>",
