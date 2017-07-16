@@ -1,4 +1,4 @@
-require("babel-polyfill")
+require('babel-polyfill')
 require('babel-register')
 
 const micro = require('micro')
@@ -113,4 +113,29 @@ test('info api', async t => {
   const info = await callForOk(url, 'info')
   t.is(info.pid, process.pid)
   t.is(info.hostname, os.hostname())
+})
+
+test('not implemented', async t => {
+  const service = micro(route())
+  const url = await listen(service)
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    body: {cmd: 'ping'}
+  })
+
+  t.is(res.status, 501)
+})
+
+test('unmatched cmd', async t => {
+  const service = micro(route())
+  const url = await listen(service)
+
+  const body = await callForBody(url, 'undefinedCmd', {hello: 'world'})
+
+  t.deepEqual(body, {
+    ok: false,
+    code: 'unmatched-cmd',
+    output: {cmd: 'undefinedCmd', input: {hello: 'world'}}
+  })
 })
