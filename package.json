@@ -1,6 +1,6 @@
 {
   "name": "micro-action",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "help define actions for micro",
   "main": "index.js",
   "author": "zhaoyao91 <zhaoyao91@163.com>",
@@ -15,10 +15,8 @@
   "peerDependencies": {
     "micro": "^7.x.x"
   },
-  "dependencies": {
-    "node-fetch": "^1.x.x"
-  },
   "devDependencies": {
+    "node-fetch": "^1.x.x",
     "ava": "^0.21.0",
     "babel-polyfill": "^6.23.0",
     "babel-preset-env": "^1.6.0",
